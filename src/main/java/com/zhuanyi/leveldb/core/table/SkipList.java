@@ -22,7 +22,13 @@ public class SkipList<K extends Comparable<K>> {
     /**
      * 用来计算跳跃表高度的随机数
      */
-    private Random random;
+    private final Random random;
+
+    public SkipList() {
+        maxHeight = 1;
+        head = Node.newNode(null, K_MAX_HEIGHT);
+        random = new Random(System.currentTimeMillis());
+    }
 
     private static class Node<K extends Comparable<K>> {
 
@@ -89,7 +95,7 @@ public class SkipList<K extends Comparable<K>> {
 
         @Override
         public void seekToFirst() {
-            nowNode = list.head;
+            nowNode = list.head.next[0];
         }
 
         @Override
@@ -98,21 +104,12 @@ public class SkipList<K extends Comparable<K>> {
         }
     }
 
-    public static void main(String[] args) {
-        //Collection
-        System.out.println();
-    }
-
     /**
      * 插入方法，需要外部加锁
      *
      * @param key 插入的key
      */
     public void insert(K key) {
-        if (isFirstNode()) {
-            insertFirstNode(key);
-            return;
-        }
 
         Node<K>[] prev = new Node[K_MAX_HEIGHT];
         Node<K> x = findGreaterOrEqual(key, prev);
@@ -134,15 +131,6 @@ public class SkipList<K extends Comparable<K>> {
             x.next[i] = prev[i].next[i];
             prev[i].next[i] = x;
         }
-    }
-
-    private boolean isFirstNode() {
-        return head == null;
-    }
-
-    private void insertFirstNode(K key) {
-        int height = getRandomHeight();
-        head = Node.newNode(key, height);
     }
 
     /**
