@@ -25,20 +25,21 @@ public class SkipListTest {
         // Verify the results
         assertTrue(skipListUnderTest.contains("key"));
 
-        Set<String> datas = prepareDataSet(10000000);
+        int dataSize = 10000000;
+        Set<String> datas = prepareDataSet(dataSize);
         long begin = System.currentTimeMillis();
         for (String data : datas) {
             skipListUnderTest.insert(data);
         }
         long end = System.currentTimeMillis();
-        System.out.println("插入:" + 100000 + "个数据，耗时：" + (end - begin));
+        System.out.println("插入:" + dataSize + "个数据，耗时：" + (end - begin));
 
     }
 
     private Set<String> prepareDataSet(int setSize) {
         Set<String> data = new TreeSet<>();
         for (int i = 0; i < setSize; i++) {
-            data.add("test" + new Random().nextInt());
+            data.add("test" + i);
         }
         return data;
     }
@@ -47,17 +48,32 @@ public class SkipListTest {
     public void testContains() {
         assertFalse(skipListUnderTest.contains("key"));
 
-        Set<String> datas = prepareDataSet(1000000);
+        int dataSize = 10000000;
+        Set<String> datas = prepareDataSet(dataSize);
         for (String data : datas) {
             skipListUnderTest.insert(data);
         }
 
         long begin = System.currentTimeMillis();
         for (String data : datas) {
+            //datas.contains(data);
             assertTrue(skipListUnderTest.contains(data));
         }
         long end = System.currentTimeMillis();
-        System.out.println("包含:" + 1000000 + "个数据，耗时：" + (end - begin));
+        System.out.println("包含:" + dataSize + "个数据，耗时：" + (end - begin));
+
+        TableIterator<String> result = skipListUnderTest.iterator();
+        int[] heights = new int[13];
+        while (true) {
+            result.next();
+            if (!result.valid()) {
+                break;
+            }
+            heights[result.height()]++;
+        }
+        for (int i = 1; i <= 12; i++) {
+            System.out.println("高度为：" + i + ",数量为:" + heights[i]);
+        }
     }
 
     @Test
@@ -91,6 +107,23 @@ public class SkipListTest {
         result.seekToFirst();
         assertEquals("test1", result.key());
         // Verify the results
+    }
+
+    @Test
+    public void benchmark() {
+        int dataSize = 10000000;
+        Set<String> datas = prepareDataSet(dataSize);
+
+        for (String data : datas) {
+            skipListUnderTest.insert(data);
+        }
+
+        long begin = System.currentTimeMillis();
+        datas.contains("test100000");
+        //assertTrue(skipListUnderTest.contains("test100000"));
+        long end = System.currentTimeMillis();
+        System.out.println("查找:" + dataSize + "个数据，耗时：" + (end - begin));
+
     }
 
 }

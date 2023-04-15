@@ -15,7 +15,7 @@ public class SkipList<K extends Comparable<K>> {
      */
     private static final int K_BRANCHING = 4;
 
-    private volatile Node<K> head;
+    private final Node<K> head;
 
     private volatile int maxHeight;
 
@@ -102,6 +102,11 @@ public class SkipList<K extends Comparable<K>> {
         public void seekToLast() {
             nowNode = list.findLast();
         }
+
+        @Override
+        public int height() {
+            return nowNode.next.length;
+        }
     }
 
     /**
@@ -131,6 +136,7 @@ public class SkipList<K extends Comparable<K>> {
             x.next[i] = prev[i].next[i];
             prev[i].next[i] = x;
         }
+
     }
 
     /**
@@ -206,7 +212,7 @@ public class SkipList<K extends Comparable<K>> {
 
     private int getRandomHeight() {
         int height = 1;
-        while (height < K_MAX_HEIGHT && (random.nextInt() % K_BRANCHING == 0)) {
+        while (height < K_MAX_HEIGHT && (random.nextInt(4) % K_BRANCHING == 0)) {
             height++;
         }
         return height;
