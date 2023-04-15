@@ -109,7 +109,12 @@ leveldb中的跳跃表，核心方法如下：
 > - 在每一个 volatile 读操作后面插入一个 loadstore 屏障  
 这就导致用volatile修饰的变量，无论读写都会加入内存屏障，而有些操作是不需要加内存屏障的，这就导致性能比较差
 
-项目中的实现跳跃表实现：com.zhuanyi.leveldb.core.table.SkipList
+项目中的实现跳跃表实现：com.zhuanyi.leveldb.core.table.SkipTable
+
+## 核心组件
+
+### Memtable
+
 
 
 

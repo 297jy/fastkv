@@ -3,7 +3,7 @@ package com.zhuanyi.leveldb.core.table;
 
 import java.util.Random;
 
-public class SkipList<K extends Comparable<K>> {
+public class SkipTable<K extends Comparable<K>> {
 
     /**
      * 跳跃表最大高度
@@ -24,7 +24,7 @@ public class SkipList<K extends Comparable<K>> {
      */
     private final Random random;
 
-    public SkipList() {
+    public SkipTable() {
         maxHeight = 1;
         head = Node.newNode(null, K_MAX_HEIGHT);
         random = new Random(System.currentTimeMillis());
@@ -49,14 +49,14 @@ public class SkipList<K extends Comparable<K>> {
         /**
          * 跳跃表对象
          */
-        private final SkipList<K> list;
+        private final SkipTable<K> list;
 
         /**
          * 当前遍历到的节点
          */
         private Node<K> nowNode;
 
-        public SkipTableIterator(SkipList<K> list) {
+        public SkipTableIterator(SkipTable<K> list) {
             this.list = list;
             this.nowNode = list.head;
         }
@@ -103,7 +103,6 @@ public class SkipList<K extends Comparable<K>> {
             nowNode = list.findLast();
         }
 
-        @Override
         public int height() {
             return nowNode.next.length;
         }
@@ -240,5 +239,23 @@ public class SkipList<K extends Comparable<K>> {
 
     public TableIterator<K> iterator() {
         return new SkipTableIterator<>(this);
+    }
+
+    @Override
+    public String toString() {
+        SkipTableIterator<String> result = (SkipTableIterator<String>) iterator();
+        int[] heights = new int[K_MAX_HEIGHT + 1];
+        while (true) {
+            result.next();
+            if (!result.valid()) {
+                break;
+            }
+            heights[result.height()]++;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1; i <= 12; i++) {
+            sb.append("高度为: ").append(i).append(",数量为: ").append(heights[i]).append("\n");
+        }
+        return sb.toString();
     }
 }

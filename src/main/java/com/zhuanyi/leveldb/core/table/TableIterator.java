@@ -45,6 +45,4 @@ public interface TableIterator<K extends Comparable<K>> {
      */
     void seekToLast();
 
-    int height();
-
 }

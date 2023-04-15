@@ -7,29 +7,29 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-public class SkipListTest {
+public class SkipTableTest {
 
-    private SkipList<String> skipListUnderTest;
+    private SkipTable<String> skipTableUnderTest;
 
     @Before
     public void setUp() {
-        skipListUnderTest = new SkipList<>();
+        skipTableUnderTest = new SkipTable<>();
     }
 
     @Test
     public void testInsert() {
         // Setup
         // Run the test
-        skipListUnderTest.insert("key");
+        skipTableUnderTest.insert("key");
 
         // Verify the results
-        assertTrue(skipListUnderTest.contains("key"));
+        assertTrue(skipTableUnderTest.contains("key"));
 
         int dataSize = 10000000;
         Set<String> datas = prepareDataSet(dataSize);
         long begin = System.currentTimeMillis();
         for (String data : datas) {
-            skipListUnderTest.insert(data);
+            skipTableUnderTest.insert(data);
         }
         long end = System.currentTimeMillis();
         System.out.println("插入:" + dataSize + "个数据，耗时：" + (end - begin));
@@ -46,34 +46,21 @@ public class SkipListTest {
 
     @Test
     public void testContains() {
-        assertFalse(skipListUnderTest.contains("key"));
+        assertFalse(skipTableUnderTest.contains("key"));
 
         int dataSize = 10000000;
         Set<String> datas = prepareDataSet(dataSize);
         for (String data : datas) {
-            skipListUnderTest.insert(data);
+            skipTableUnderTest.insert(data);
         }
 
         long begin = System.currentTimeMillis();
         for (String data : datas) {
             //datas.contains(data);
-            assertTrue(skipListUnderTest.contains(data));
+            assertTrue(skipTableUnderTest.contains(data));
         }
         long end = System.currentTimeMillis();
         System.out.println("包含:" + dataSize + "个数据，耗时：" + (end - begin));
-
-        TableIterator<String> result = skipListUnderTest.iterator();
-        int[] heights = new int[13];
-        while (true) {
-            result.next();
-            if (!result.valid()) {
-                break;
-            }
-            heights[result.height()]++;
-        }
-        for (int i = 1; i <= 12; i++) {
-            System.out.println("高度为：" + i + ",数量为:" + heights[i]);
-        }
     }
 
     @Test
@@ -86,10 +73,10 @@ public class SkipListTest {
         datas.add("test2");
         datas.add("test3");
         for (String data : datas) {
-            skipListUnderTest.insert(data);
+            skipTableUnderTest.insert(data);
         }
 
-        TableIterator<String> result = skipListUnderTest.iterator();
+        TableIterator<String> result = skipTableUnderTest.iterator();
         for (String tt : datas) {
             result.next();
             assertEquals(tt, result.key());
@@ -115,7 +102,7 @@ public class SkipListTest {
         Set<String> datas = prepareDataSet(dataSize);
 
         for (String data : datas) {
-            skipListUnderTest.insert(data);
+            skipTableUnderTest.insert(data);
         }
 
         long begin = System.currentTimeMillis();
