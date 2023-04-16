@@ -1,9 +1,6 @@
 package com.zhuanyi.leveldb.test;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Stack;
+import java.util.*;
 
 public class TestMain {
 
@@ -14,7 +11,8 @@ public class TestMain {
 
         Stack<String> ss = new Stack<>();
 
-        int x = 1;
-        System.out.println((x >> 31) & 1);
+        byte[] x = new byte[]{1,2,3,4,5};
+        System.out.println(x);
+
     }
 }

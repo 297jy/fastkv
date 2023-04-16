@@ -1,6 +1,7 @@
 package com.zhuanyi.leveldb.core.table;
 
 
+import java.util.Comparator;
 import java.util.Random;
 
 public class SkipTable<K extends Comparable<K>> {
@@ -24,10 +25,13 @@ public class SkipTable<K extends Comparable<K>> {
      */
     private final Random random;
 
-    public SkipTable() {
+    private final Comparator<K> comparator;
+
+    public SkipTable(Comparator<K> comparator) {
         maxHeight = 1;
         head = Node.newNode(null, K_MAX_HEIGHT);
         random = new Random(System.currentTimeMillis());
+        this.comparator = comparator;
     }
 
     private static class Node<K extends Comparable<K>> {
@@ -175,9 +179,9 @@ public class SkipTable<K extends Comparable<K>> {
         Node<K> x = head;
         int level = getNowMaxHeight() - 1;
         while (true) {
-            assert (x == head || x.key.compareTo(key) < 0);
+            assert (x == head || cmp(x.key, key) < 0);
             Node<K> next = x.next[level];
-            if (next == null || next.key.compareTo(key) >= 0) {
+            if (next == null || cmp(next.key, key) >= 0) {
                 if (level == 0) {
                     return x;
                 } else {
@@ -226,7 +230,14 @@ public class SkipTable<K extends Comparable<K>> {
     }
 
     private boolean keyIsAfterNode(K key, Node<K> n) {
-        return n != null && n.key.compareTo(key) < 0;
+        return n != null && cmp(n.key, key) < 0;
+    }
+
+    private int cmp(K key1, K key2) {
+        if (this.comparator != null) {
+            return comparator.compare(key1, key2);
+        }
+        return key1.compareTo(key2);
     }
 
     public boolean contains(K key) {

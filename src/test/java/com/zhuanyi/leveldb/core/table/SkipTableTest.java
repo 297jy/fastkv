@@ -13,7 +13,7 @@ public class SkipTableTest {
 
     @Before
     public void setUp() {
-        skipTableUnderTest = new SkipTable<>();
+        skipTableUnderTest = new SkipTable<>(null);
     }
 
     @Test

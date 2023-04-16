@@ -2,7 +2,6 @@ package com.zhuanyi.leveldb.core.common;
 
 import javafx.util.Pair;
 
-import java.util.Arrays;
 
 public class Coding {
 
@@ -34,6 +33,32 @@ public class Coding {
             dst[begin++] = 0;
         }
         return begin;
+    }
+
+    public static void encodeFixed64(byte[] dst, int begin, long value) {
+        dst[begin++] = (byte) value;
+        dst[begin++] = (byte) (value >> 8);
+        dst[begin++] = (byte) (value >> 16);
+        dst[begin++] = (byte) (value >> 24);
+        dst[begin++] = (byte) (value >> 32);
+        dst[begin++] = (byte) (value >> 40);
+        dst[begin++] = (byte) (value >> 48);
+        dst[begin] = (byte) (value >> 56);
+    }
+
+    public static void putFixed64(byte[] dst, int begin, long value) {
+        byte[] buffer = new byte[8];
+        encodeFixed64(buffer, 0, value);
+        System.arraycopy(dst, begin, buffer, 0, 8);
+    }
+
+    public static Pair<Integer, Integer> getVarInt32Ptr(byte[] dst, int begin, int end) {
+        if(begin < end) {
+            if((dst[begin] & 128) == 0) {
+                return new Pair<>(begin + 1, (int) dst[begin]);
+            }
+        }
+        return getVarInt32PtrFallback(dst, begin, end);
     }
 
     public static Pair<Integer, Integer> getVarInt32PtrFallback(byte[] dst, int begin, int end) {
