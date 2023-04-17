@@ -6,15 +6,16 @@ import com.zhuanyi.leveldb.core.common.Slice;
 import com.zhuanyi.leveldb.core.db.enums.ValueType;
 import com.zhuanyi.leveldb.core.db.format.DbFormat;
 import com.zhuanyi.leveldb.core.table.MemTable;
+import com.zhuanyi.leveldb.core.table.SkipTable;
 import com.zhuanyi.leveldb.core.table.TableIterator;
 import javafx.util.Pair;
+import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 
 import java.util.Comparator;
 
 public class DefaultMemTableImpl implements MemTable {
 
-    public DefaultMemTableImpl() {
-    }
+    private final SkipTable<Slice> table;
 
     public static class KeyComparator implements Comparator<Slice> {
 
@@ -45,12 +46,16 @@ public class DefaultMemTableImpl implements MemTable {
         }
     }
 
-    private KeyComparator comparator;
+    private final KeyComparator comparator;
 
+    public DefaultMemTableImpl(DbFormat.InternalKeyComparator comparator) {
+        this.comparator = new KeyComparator(comparator);
+        table = new SkipTable<>(this.comparator);
+    }
 
     @Override
     public long approximateMemoryUsage() {
-        return 0;
+        return ObjectSizeCalculator.getObjectSize(table);
     }
 
     @Override
@@ -60,7 +65,51 @@ public class DefaultMemTableImpl implements MemTable {
 
     @Override
     public void add(long seq, ValueType type, Slice key, Slice value) {
+        int keySize = key.getSize();
+        int valueSize = value.getSize();
+        int internalKeySize = keySize + 8;
+        // 数据格式:internalKeySizeByteLen + internalKeySize + valueByteLen + valueSize
+        int encodedLen = Coding.varIntLength(internalKeySize) + internalKeySize + Coding.varIntLength(valueSize) + valueSize;
 
+        byte[] dst = new byte[encodedLen];
+        int begin = encodeKey(dst, key, seq, type);
+        begin = encodeValue(dst, begin, value);
+
+        table.insert(new Slice(dst, 0, begin));
+    }
+
+    private int encodeKey(byte[] dst, Slice key, long seq, ValueType type) {
+        int keySize = key.getSize();
+        int internalKeySize = keySize + 8;
+
+        int begin = Coding.encodeVarInt32(dst, 0, internalKeySize);
+        System.arraycopy(key.getData(), key.getBegin(), dst, begin, key.getSize());
+        begin += key.getSize();
+
+        Coding.encodeFixed64(dst, begin, (seq << 8) | type.getCode());
+        begin += 8;
+
+        return begin;
+    }
+
+    private int encodeValue(byte[] dst, int begin, Slice value) {
+        int valSize = value.getSize();
+
+        begin = Coding.encodeVarInt32(dst, begin, valSize);
+        System.arraycopy(value.getData(), value.getBegin(), dst, begin, value.getSize());
+        begin += value.getSize();
+
+        return begin;
+    }
+
+    private int encodeValue(byte[] dst, int begin, Slice key, long seq, ValueType type) {
+        System.arraycopy(key.getData(), key.getBegin(), dst, begin, key.getSize());
+        begin += key.getSize();
+
+        Coding.encodeFixed64(dst, begin, (seq << 8) | type.getCode());
+        begin += 8;
+
+        return begin;
     }
 
     @Override

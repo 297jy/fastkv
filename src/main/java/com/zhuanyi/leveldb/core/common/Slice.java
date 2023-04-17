@@ -73,6 +73,12 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
         return data;
     }
 
+    public void append(Slice src) {
+        if (data == null) {
+
+        }
+    }
+
     public Slice copy() {
         byte[] newData = copyData();
         return new Slice(newData, 0, newData.length);

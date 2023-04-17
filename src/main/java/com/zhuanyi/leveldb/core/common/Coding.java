@@ -35,6 +35,15 @@ public class Coding {
         return begin;
     }
 
+    public static int varIntLength(int value) {
+        int len = 1;
+        while (value >= B) {
+            value >>= 7;
+            len++;
+        }
+        return len;
+    }
+
     public static void encodeFixed64(byte[] dst, int begin, long value) {
         dst[begin++] = (byte) value;
         dst[begin++] = (byte) (value >> 8);
@@ -53,8 +62,8 @@ public class Coding {
     }
 
     public static Pair<Integer, Integer> getVarInt32Ptr(byte[] dst, int begin, int end) {
-        if(begin < end) {
-            if((dst[begin] & 128) == 0) {
+        if (begin < end) {
+            if ((dst[begin] & 128) == 0) {
                 return new Pair<>(begin + 1, (int) dst[begin]);
             }
         }
