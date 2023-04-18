@@ -3,6 +3,7 @@ package com.zhuanyi.leveldb.core.table.impl;
 import com.zhuanyi.leveldb.common.Result;
 import com.zhuanyi.leveldb.core.common.Coding;
 import com.zhuanyi.leveldb.core.common.Slice;
+import com.zhuanyi.leveldb.core.common.Status;
 import com.zhuanyi.leveldb.core.db.enums.ValueType;
 import com.zhuanyi.leveldb.core.db.format.DbFormat;
 import com.zhuanyi.leveldb.core.table.MemTable;
@@ -16,6 +17,8 @@ import java.util.Comparator;
 public class DefaultMemTableImpl implements MemTable {
 
     private final SkipTable<Slice> table;
+
+    private final Slice tmp = new Slice();
 
     public static class KeyComparator implements Comparator<Slice> {
 
@@ -102,19 +105,36 @@ public class DefaultMemTableImpl implements MemTable {
         return begin;
     }
 
-    private int encodeValue(byte[] dst, int begin, Slice key, long seq, ValueType type) {
-        System.arraycopy(key.getData(), key.getBegin(), dst, begin, key.getSize());
-        begin += key.getSize();
-
-        Coding.encodeFixed64(dst, begin, (seq << 8) | type.getCode());
-        begin += 8;
-
-        return begin;
-    }
-
     @Override
     public Result<Slice> get(DbFormat.LookupKey key) {
-        return null;
+        Slice memkey = key.memTableKey();
+        TableIterator<Slice> it = table.iterator();
+        it.seek(memkey);
+        if (it.valid()) {
+            Slice entry = it.key();
+            // 查询到的key为>=lookupKey，所以还需要判断是否相等
+            if (comparator.compare(key.memTableKey(), entry) == 0) {
+                Pair<Integer, Integer> beginSizePair = Coding.getVarInt32Ptr(entry.getData(), entry.getBegin(), entry.getEnd());
+                int begin = beginSizePair.getKey();
+                int keyLength = beginSizePair.getValue();
+                long sat = Coding.decodeFixed64(entry.getData(), begin + keyLength);
+                int tag = (int) (sat & 0xff);
+                ValueType valueType = ValueType.valueOf(tag);
+                if (valueType == null) {
+                    Result.fail(Status.unKnown(new String(key.userKey().getData())));
+                } else {
+                    if (valueType.equals(ValueType.K_TYPE_VALUE)) {
+                        Result.success(entry.subSlice(begin, begin + keyLength).copy());
+                    } else {
+                        // 标志位=删除，代表该节点已经被删除
+                        if (valueType.equals(ValueType.K_TYPE_DELETION)) {
+                            Result.success(null);
+                        }
+                    }
+                }
+            }
+        }
+        return Result.fail(Status.unKnown(new String(key.userKey().getData())));
     }
 
     @Override

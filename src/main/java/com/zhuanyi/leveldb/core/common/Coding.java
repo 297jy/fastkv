@@ -55,6 +55,17 @@ public class Coding {
         dst[begin] = (byte) (value >> 56);
     }
 
+    public static long decodeFixed64(byte[] dst, int begin) {
+        return dst[begin++]
+                | (dst[begin++] << 8)
+                | (dst[begin++] << 16)
+                | (dst[begin++] << 24)
+                | ((long) dst[begin++] << 32)
+                | ((long) dst[begin++] << 40)
+                | ((long) dst[begin++] << 48)
+                | ((long) dst[begin] << 56);
+    }
+
     public static void putFixed64(byte[] dst, int begin, long value) {
         byte[] buffer = new byte[8];
         encodeFixed64(buffer, 0, value);

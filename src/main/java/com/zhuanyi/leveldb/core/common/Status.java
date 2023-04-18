@@ -46,27 +46,31 @@ public class Status {
         state = code + ": " + StringUtils.join(msg, ",");
     }
 
-    public static Status OK() {
+    public static Status ok() {
         return new Status();
     }
 
-    public static Status NotFound(String... msg) {
+    public static Status notFound(String... msg) {
         return new Status(Code.K_NOT_FOUND, msg);
     }
 
-    public static Status Corruption(String... msg) {
+    public static Status unKnown(String... msg) {
+        return new Status(Code.K_UNKNOWN, msg);
+    }
+
+    public static Status corruption(String... msg) {
         return new Status(Code.K_CORRUPTION, msg);
     }
 
-    public static Status NotSupported(String... msg) {
+    public static Status notSupported(String... msg) {
         return new Status(Code.K_NOT_SUPPORTED, msg);
     }
 
-    public static Status InvalidArgument(String... msg) {
+    public static Status invalidArgument(String... msg) {
         return new Status(Code.K_INVALID_ARGUMENT, msg);
     }
 
-    public static Status IOError(String... msg) {
+    public static Status iOError(String... msg) {
         return new Status(Code.K_IO_ERROR, msg);
     }
 
