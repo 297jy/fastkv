@@ -1,5 +1,6 @@
 package com.zhuanyi.leveldb.core.table;
 
+import com.zhuanyi.leveldb.core.db.TableIterator;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -1,6 +1,8 @@
 package com.zhuanyi.leveldb.core.table;
 
 
+import com.zhuanyi.leveldb.core.db.TableIterator;
+
 import java.util.Comparator;
 import java.util.Random;
 

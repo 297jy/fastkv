@@ -1,5 +1,7 @@
 package com.zhuanyi.leveldb.core.common;
 
+import javafx.util.Pair;
+
 import java.util.Iterator;
 
 public class Slice implements Comparable<Slice>, Iterable<Byte> {
@@ -10,45 +12,82 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
 
     private int end;
 
-    private int size;
-
     public Slice() {
     }
 
     public Slice(byte[] data, int begin, int size) {
         this.data = data;
         this.begin = begin;
-        this.size = size;
         this.end = begin + size;
+    }
+
+    public Slice(int n) {
+        data = new byte[n];
+        begin = 0;
+        end = 0;
+    }
+
+    public Slice read(int n) {
+        Slice res = new Slice();
+        res.data = data;
+        res.begin = begin;
+        res.end = begin + n;
+
+        begin += n;
+        return res;
+    }
+
+    public Integer readVarInt() {
+
+        Pair<Integer, Integer> beginNumPair = Coding.getVarInt32Ptr(data, begin, end);
+        if (beginNumPair == null) {
+            return null;
+        }
+        begin = beginNumPair.getKey();
+        return beginNumPair.getValue();
+    }
+
+    public long readLong() {
+        long res = Coding.decodeFixed64(data, begin);
+        begin += 8;
+        return res;
+    }
+
+    public void writeLong(long value) {
+        Coding.encodeFixed64(data, end, value);
+        end += 8;
+    }
+
+    public void writeVarInt(int value) {
+        end = Coding.encodeVarInt32(data, end, value);
+    }
+
+    public void write(Slice src) {
+        System.arraycopy(src.data, src.begin, data, end, src.getSize());
+        end += src.getSize();
+    }
+
+    public void write(byte[] src) {
+        System.arraycopy(src, 0, data, end, src.length);
+        end += src.length;
     }
 
     public Slice(Slice slice) {
         this.data = slice.data;
         this.begin = slice.begin;
-        this.size = slice.size;
         this.end = slice.end;
     }
 
     public void refresh(byte[] data, int begin, int size) {
         this.data = data;
         this.begin = begin;
-        this.size = size;
         this.end = begin + size;
-    }
-
-    public int getBegin() {
-        return begin;
-    }
-
-    public int getEnd() {
-        return end;
     }
 
     public Slice subSlice(int subBegin, int subEnd) {
         assert (subBegin >= begin && subEnd <= end);
 
         Slice slice = new Slice(this);
-        slice.size = subEnd - subBegin;
         slice.begin = subBegin;
         slice.end = subEnd;
 
@@ -56,27 +95,17 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
     }
 
     public boolean empty() {
-        return size == 0;
+        return getSize() == 0;
     }
 
     public byte[] copyData() {
-        byte[] newData = new byte[size];
-        System.arraycopy(data, begin, newData, 0, size);
+        byte[] newData = new byte[getSize()];
+        System.arraycopy(data, begin, newData, 0, getSize());
         return newData;
     }
 
     public int getSize() {
-        return size;
-    }
-
-    public byte[] getData() {
-        return data;
-    }
-
-    public void append(Slice src) {
-        if (data == null) {
-
-        }
+        return end - begin;
     }
 
     public Slice copy() {
@@ -125,14 +154,16 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
             i++;
             j++;
         }
-        if (size == o.size) {
+        int s1 = getSize();
+        int s2 = o.getSize();
+        if (s1 == s2) {
             return 0;
         }
-        return size < o.size ? -1 : 1;
+        return s1 < s2 ? -1 : 1;
     }
 
     @Override
     public String toString() {
-        return new String(data, begin, size);
+        return new String(data, begin, getSize());
     }
 }

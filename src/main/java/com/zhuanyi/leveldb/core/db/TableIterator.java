@@ -1,4 +1,4 @@
-package com.zhuanyi.leveldb.core.table;
+package com.zhuanyi.leveldb.core.db;
 
 
 /**

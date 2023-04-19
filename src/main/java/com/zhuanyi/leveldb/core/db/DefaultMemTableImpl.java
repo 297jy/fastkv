@@ -1,4 +1,4 @@
-package com.zhuanyi.leveldb.core.table.impl;
+package com.zhuanyi.leveldb.core.db;
 
 import com.zhuanyi.leveldb.common.Result;
 import com.zhuanyi.leveldb.core.common.Coding;
@@ -6,9 +6,9 @@ import com.zhuanyi.leveldb.core.common.Slice;
 import com.zhuanyi.leveldb.core.common.Status;
 import com.zhuanyi.leveldb.core.db.enums.ValueType;
 import com.zhuanyi.leveldb.core.db.format.DbFormat;
-import com.zhuanyi.leveldb.core.table.MemTable;
+import com.zhuanyi.leveldb.core.db.format.InternalKey;
+import com.zhuanyi.leveldb.core.db.format.MemTableKey;
 import com.zhuanyi.leveldb.core.table.SkipTable;
-import com.zhuanyi.leveldb.core.table.TableIterator;
 import javafx.util.Pair;
 import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 
@@ -56,6 +56,42 @@ public class DefaultMemTableImpl implements MemTable {
         table = new SkipTable<>(this.comparator);
     }
 
+    private static class MemTableNode {
+
+        private final MemTableKey memTableKey;
+
+        private final int valueLen;
+
+        private final Slice userValue;
+
+        public MemTableNode(MemTableKey memTableKey, int valueLen, Slice userValue) {
+            this.memTableKey = memTableKey;
+            this.valueLen = valueLen;
+            this.userValue = userValue;
+        }
+
+        public static MemTableNode readMemTableNode(Slice node) {
+            MemTableKey memTableKey = MemTableKey.readMemTableKey(node);
+            int valueLen = node.readVarInt();
+            Slice userValue = node.read(valueLen);
+            return new MemTableNode(memTableKey, valueLen, userValue);
+        }
+
+        public static void writeMemTableNode(Slice target, MemTableNode memTableNode) {
+            MemTableKey.writeMemTableKey(target, memTableNode.memTableKey);
+            target.writeVarInt(memTableNode.valueLen);
+            target.write(memTableNode.userValue);
+        }
+
+        public boolean valid() {
+            return memTableKey.valid();
+        }
+
+        public boolean deleted() {
+            return memTableKey.deleted();
+        }
+    }
+
     @Override
     public long approximateMemoryUsage() {
         return ObjectSizeCalculator.getObjectSize(table);
@@ -73,36 +109,14 @@ public class DefaultMemTableImpl implements MemTable {
         int internalKeySize = keySize + 8;
         // 数据格式:internalKeySizeByteLen + internalKeySize + valueByteLen + valueSize
         int encodedLen = Coding.varIntLength(internalKeySize) + internalKeySize + Coding.varIntLength(valueSize) + valueSize;
+        long sat = (seq << 8) | type.getCode();
+        InternalKey internalKey = new InternalKey(key, sat);
+        MemTableKey memTableKey = new MemTableKey(internalKeySize, internalKey);
+        MemTableNode memTableNode = new MemTableNode(memTableKey, valueSize, value);
+        Slice node = new Slice(encodedLen);
+        MemTableNode.writeMemTableNode(node, memTableNode);
 
-        byte[] dst = new byte[encodedLen];
-        int begin = encodeKey(dst, key, seq, type);
-        begin = encodeValue(dst, begin, value);
-
-        table.insert(new Slice(dst, 0, begin));
-    }
-
-    private int encodeKey(byte[] dst, Slice key, long seq, ValueType type) {
-        int keySize = key.getSize();
-        int internalKeySize = keySize + 8;
-
-        int begin = Coding.encodeVarInt32(dst, 0, internalKeySize);
-        System.arraycopy(key.getData(), key.getBegin(), dst, begin, key.getSize());
-        begin += key.getSize();
-
-        Coding.encodeFixed64(dst, begin, (seq << 8) | type.getCode());
-        begin += 8;
-
-        return begin;
-    }
-
-    private int encodeValue(byte[] dst, int begin, Slice value) {
-        int valSize = value.getSize();
-
-        begin = Coding.encodeVarInt32(dst, begin, valSize);
-        System.arraycopy(value.getData(), value.getBegin(), dst, begin, value.getSize());
-        begin += value.getSize();
-
-        return begin;
+        table.insert(node);
     }
 
     @Override
@@ -111,25 +125,15 @@ public class DefaultMemTableImpl implements MemTable {
         TableIterator<Slice> it = table.iterator();
         it.seek(memkey);
         if (it.valid()) {
-            Slice entry = it.key();
+            Slice node = it.key();
             // 查询到的key为>=lookupKey，所以还需要判断是否相等
-            if (comparator.compare(key.memTableKey(), entry) == 0) {
-                Pair<Integer, Integer> beginSizePair = Coding.getVarInt32Ptr(entry.getData(), entry.getBegin(), entry.getEnd());
-                int begin = beginSizePair.getKey();
-                int keyLength = beginSizePair.getValue();
-                long sat = Coding.decodeFixed64(entry.getData(), begin + keyLength);
-                int tag = (int) (sat & 0xff);
-                ValueType valueType = ValueType.valueOf(tag);
-                if (valueType == null) {
-                    Result.fail(Status.unKnown(new String(key.userKey().getData())));
+            if (comparator.compare(key.memTableKey(), node) == 0) {
+                MemTableNode memTableNode = MemTableNode.readMemTableNode(node);
+                if (memTableNode.valid()) {
+                    return Result.success(memTableNode.userValue.copy());
                 } else {
-                    if (valueType.equals(ValueType.K_TYPE_VALUE)) {
-                        Result.success(entry.subSlice(begin, begin + keyLength).copy());
-                    } else {
-                        // 标志位=删除，代表该节点已经被删除
-                        if (valueType.equals(ValueType.K_TYPE_DELETION)) {
-                            Result.success(null);
-                        }
+                    if (memTableNode.deleted()) {
+                        return Result.success(null);
                     }
                 }
             }

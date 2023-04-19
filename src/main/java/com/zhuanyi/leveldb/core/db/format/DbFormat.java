@@ -66,6 +66,7 @@ public class DbFormat {
             this.sequenceAndType = packSequenceAndType(parsedInternalKey.sequenceNumber, parsedInternalKey.type);
         }
 
+        /**
         public boolean decodeFrom(Slice s) {
             // 根据internalKey内存布局：@todo 后续补充
             userKey = s.subSlice(s.getBegin(), s.getEnd() - 8);
@@ -83,7 +84,7 @@ public class DbFormat {
             sequenceAndType = sat;
 
             return true;
-        }
+        }**/
 
         public Slice userKey() {
             return userKey;

@@ -1,4 +1,4 @@
-package com.zhuanyi.leveldb.core.table;
+package com.zhuanyi.leveldb.core.db;
 
 import com.zhuanyi.leveldb.common.Result;
 import com.zhuanyi.leveldb.core.common.Slice;
