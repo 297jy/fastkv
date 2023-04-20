@@ -1,7 +1,6 @@
 package com.zhuanyi.leveldb.core.db.format;
 
 import com.zhuanyi.leveldb.core.common.Slice;
-import com.zhuanyi.leveldb.core.db.enums.ValueType;
 
 public class MemTableKey {
 

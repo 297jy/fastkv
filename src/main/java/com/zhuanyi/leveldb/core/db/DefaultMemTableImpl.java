@@ -7,9 +7,10 @@ import com.zhuanyi.leveldb.core.common.Status;
 import com.zhuanyi.leveldb.core.db.enums.ValueType;
 import com.zhuanyi.leveldb.core.db.format.DbFormat;
 import com.zhuanyi.leveldb.core.db.format.InternalKey;
+import com.zhuanyi.leveldb.core.db.format.LookupKey;
 import com.zhuanyi.leveldb.core.db.format.MemTableKey;
 import com.zhuanyi.leveldb.core.table.SkipTable;
-import javafx.util.Pair;
+import com.zhuanyi.leveldb.core.table.TableIterator;
 import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 
 import java.util.Comparator;
@@ -18,17 +19,9 @@ public class DefaultMemTableImpl implements MemTable {
 
     private final SkipTable<Slice> table;
 
-    private final Slice tmp = new Slice();
-
     public static class KeyComparator implements Comparator<Slice> {
 
         private final DbFormat.InternalKeyComparator comparator;
-
-        /**
-         * 提前缓存好，要比较的2个slice，避免重复new造成性能开销
-         */
-        private final Slice cmpO1 = new Slice();
-        private final Slice cmpO2 = new Slice();
 
         public KeyComparator(DbFormat.InternalKeyComparator comparator) {
             assert (comparator != null);
@@ -38,14 +31,17 @@ public class DefaultMemTableImpl implements MemTable {
 
         @Override
         public int compare(Slice o1, Slice o2) {
-            getLengthPrefixedSlice(o1, cmpO1);
-            getLengthPrefixedSlice(o2, cmpO2);
-            return comparator.compare(cmpO1, cmpO2);
+            Slice co1 = new Slice(o1);
+            Slice co2 = new Slice(o2);
+
+            getLengthPrefixedSlice(co1);
+            getLengthPrefixedSlice(co2);
+            return comparator.compare(co1, co2);
         }
 
-        private void getLengthPrefixedSlice(Slice s, Slice dst) {
-            Pair<Integer, Integer> beginSizePair = Coding.getVarInt32Ptr(s.getData(), 0, 5);
-            dst.refresh(s.getData(), beginSizePair.getKey(), beginSizePair.getValue());
+        private void getLengthPrefixedSlice(Slice c) {
+            int keyLen = c.readVarInt();
+            c.cutAhead(keyLen - 8);
         }
     }
 
@@ -97,9 +93,72 @@ public class DefaultMemTableImpl implements MemTable {
         return ObjectSizeCalculator.getObjectSize(table);
     }
 
+
+    private static class InnerMemTableIterator implements MemTableIterator<Slice> {
+
+        private final TableIterator<Slice> it;
+
+        private MemTableNode nowNode;
+
+        public InnerMemTableIterator(TableIterator<Slice> it) {
+            this.it = it;
+        }
+
+        @Override
+        public boolean valid() {
+            return it.valid();
+        }
+
+        @Override
+        public Slice key() {
+            if (nowNode == null) {
+                nowNode = MemTableNode.readMemTableNode(it.key());
+            }
+            return nowNode.memTableKey.getInternalKey().getUserKey();
+        }
+
+        @Override
+        public void next() {
+            it.next();
+        }
+
+        @Override
+        public void prev() {
+            it.prev();
+        }
+
+        @Override
+        public void seek(Slice target) {
+            it.seek(target);
+        }
+
+        @Override
+        public void seekToFirst() {
+            it.seekToFirst();
+        }
+
+        @Override
+        public void seekToLast() {
+            it.seekToLast();
+        }
+
+        @Override
+        public Slice value() {
+            if (nowNode == null) {
+                nowNode = MemTableNode.readMemTableNode(it.key());
+            }
+            return nowNode.userValue;
+        }
+
+        @Override
+        public Status status() {
+            return Status.ok();
+        }
+    }
+
     @Override
-    public TableIterator<Slice> newIterator() {
-        return null;
+    public MemTableIterator<Slice> newIterator() {
+        return new InnerMemTableIterator(table.iterator());
     }
 
     @Override
@@ -120,7 +179,7 @@ public class DefaultMemTableImpl implements MemTable {
     }
 
     @Override
-    public Result<Slice> get(DbFormat.LookupKey key) {
+    public Result<Slice> get(LookupKey key) {
         Slice memkey = key.memTableKey();
         TableIterator<Slice> it = table.iterator();
         it.seek(memkey);
@@ -138,11 +197,8 @@ public class DefaultMemTableImpl implements MemTable {
                 }
             }
         }
-        return Result.fail(Status.unKnown(new String(key.userKey().getData())));
+
+        return Result.fail(Status.unKnown(key.userKey().toString()));
     }
 
-    @Override
-    public int cmpKey(Slice key1, Slice key2) {
-        return 0;
-    }
 }

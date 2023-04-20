@@ -15,10 +15,16 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
     public Slice() {
     }
 
-    public Slice(byte[] data, int begin, int size) {
+    private Slice(byte[] data, int begin, int size) {
         this.data = data;
         this.begin = begin;
         this.end = begin + size;
+    }
+
+    public Slice(byte[] data) {
+        this.data = data;
+        this.begin = 0;
+        this.end = data.length;
     }
 
     public Slice(int n) {
@@ -37,6 +43,14 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
         return res;
     }
 
+    public void cutAhead(int n) {
+        end = begin + n;
+    }
+
+    public void resize(int n) {
+        end = begin + n;
+    }
+
     public Integer readVarInt() {
 
         Pair<Integer, Integer> beginNumPair = Coding.getVarInt32Ptr(data, begin, end);
@@ -44,6 +58,14 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
             return null;
         }
         begin = beginNumPair.getKey();
+        return beginNumPair.getValue();
+    }
+
+    public Integer getVarInt() {
+        Pair<Integer, Integer> beginNumPair = Coding.getVarInt32Ptr(data, begin, end);
+        if (beginNumPair == null) {
+            return null;
+        }
         return beginNumPair.getValue();
     }
 
@@ -78,20 +100,10 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
         this.end = slice.end;
     }
 
-    public void refresh(byte[] data, int begin, int size) {
-        this.data = data;
-        this.begin = begin;
-        this.end = begin + size;
-    }
-
-    public Slice subSlice(int subBegin, int subEnd) {
-        assert (subBegin >= begin && subEnd <= end);
-
-        Slice slice = new Slice(this);
-        slice.begin = subBegin;
-        slice.end = subEnd;
-
-        return slice;
+    public void refresh(Slice s) {
+        this.data = s.data;
+        this.begin = s.begin;
+        this.end = s.begin;
     }
 
     public boolean empty() {

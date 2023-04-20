@@ -5,7 +5,6 @@ import com.zhuanyi.leveldb.core.common.Slice;
 import com.zhuanyi.leveldb.core.db.enums.ValueType;
 
 import java.util.Comparator;
-import java.util.Iterator;
 
 public class DbFormat {
 
@@ -142,6 +141,7 @@ public class DbFormat {
      * 用于memtable的Get接口，它是由User Key和Sequence Number组合而成的
      * LookupKey的格式为：| Size (int32变长)| User key (string) | sequence number (7 bytes) | value type (1 byte) |
      */
+    /**
     public static class LookupKey {
 
         private final int kstart;
@@ -174,5 +174,5 @@ public class DbFormat {
             return new Slice(data, kstart, end - kstart - 8);
         }
 
-    }
+     }**/
 }
