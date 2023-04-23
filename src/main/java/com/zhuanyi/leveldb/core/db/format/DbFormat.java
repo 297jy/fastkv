@@ -1,6 +1,5 @@
 package com.zhuanyi.leveldb.core.db.format;
 
-import com.zhuanyi.leveldb.core.common.Coding;
 import com.zhuanyi.leveldb.core.common.Slice;
 import com.zhuanyi.leveldb.core.db.enums.ValueType;
 
@@ -19,10 +18,25 @@ public class DbFormat {
 
         private final Comparator<Slice> userComparator;
 
-        private final Comparator<InternalKey> userInternalComparator;
+        private final Comparator<Slice> internalKeyComparator;
 
         public InternalKeyComparator(Comparator<Slice> userComparator) {
             this.userComparator = userComparator;
+            this.internalKeyComparator = (o1, o2) -> {
+                Slice co1 = new Slice(o1);
+                Slice co2 = new Slice(o2);
+                MemTableKey  mo1 = MemTableKey.readMemTableKey(co1);
+                Slice userKey1 = mo1.getInternalKey().getUserKey();
+                MemTableKey  mo2 = MemTableKey.readMemTableKey(co2);
+                Slice userKey2 = mo2.getInternalKey().getUserKey();
+                int cmp = userComparator == null ? userKey1.compareTo(userKey2) : userComparator.compare(userKey1, userKey2);
+                if (cmp == 0) {
+                    return mo1.getInternalKey().getSequenceAndType() > mo2.getInternalKey().getSequenceAndType() ? -1 : 1;
+                }
+                return cmp;
+            };
+
+            /**
             this.userInternalComparator = (o1, o2) -> {
                 int cmp = userComparator == null ? o1.compareTo(o2) : userComparator.compare(o1.userKey, o2.userKey);
                 if (cmp != 0) {
@@ -32,21 +46,27 @@ public class DbFormat {
                     return 0;
                 }
                 return o1.sequenceAndType < o2.sequenceAndType ? 1 : -1;
-            };
+            };**/
         }
 
         public int compare(Slice a, Slice b) {
+            return internalKeyComparator.compare(a, b);
+        }
+
+        public int compareUserKey(Slice a, Slice b) {
             if (userComparator != null) {
                 return userComparator.compare(a, b);
             }
             return a.compareTo(b);
         }
 
+        /**
         public int compare(InternalKey a, InternalKey b) {
             return userInternalComparator.compare(a, b);
-        }
+        }**/
     }
 
+    /**
     public static class InternalKey implements Comparable<InternalKey> {
 
         private Slice userKey;
@@ -65,7 +85,7 @@ public class DbFormat {
             this.sequenceAndType = packSequenceAndType(parsedInternalKey.sequenceNumber, parsedInternalKey.type);
         }
 
-        /**
+
         public boolean decodeFrom(Slice s) {
             // 根据internalKey内存布局：@todo 后续补充
             userKey = s.subSlice(s.getBegin(), s.getEnd() - 8);
@@ -83,7 +103,7 @@ public class DbFormat {
             sequenceAndType = sat;
 
             return true;
-        }**/
+        }
 
         public Slice userKey() {
             return userKey;
@@ -113,8 +133,9 @@ public class DbFormat {
             ParsedInternalKey parsedInternalKey = toParsedInternalKey();
             return parsedInternalKey.debugString();
         }
-    }
+    }**/
 
+    /**
     public static class ParsedInternalKey {
 
         private Slice userKey;
@@ -135,7 +156,7 @@ public class DbFormat {
         public String debugString() {
             return "'" + userKey.toString() + "' @ " + sequenceNumber + " : " + type;
         }
-    }
+    }**/
 
     /**
      * 用于memtable的Get接口，它是由User Key和Sequence Number组合而成的
@@ -175,4 +196,9 @@ public class DbFormat {
         }
 
      }**/
+
+    public static Slice getUserKey(Slice node) {
+        MemTableKey memTableKey = MemTableKey.readMemTableKey(node);
+        return memTableKey.getInternalKey().getUserKey();
+    }
 }

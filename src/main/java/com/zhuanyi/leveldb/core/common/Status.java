@@ -25,11 +25,11 @@ public class Status {
 
     static {
         CODE_MSG_MAP.put(Code.K_OK.ordinal(), "OK");
-        CODE_MSG_MAP.put(Code.K_OK.ordinal(), "NOT_FOUND:");
-        CODE_MSG_MAP.put(Code.K_OK.ordinal(), "CORRUPTION:");
-        CODE_MSG_MAP.put(Code.K_OK.ordinal(), "Not implemented: ");
-        CODE_MSG_MAP.put(Code.K_OK.ordinal(), "Invalid argument: ");
-        CODE_MSG_MAP.put(Code.K_OK.ordinal(), "IO error: ");
+        CODE_MSG_MAP.put(Code.K_NOT_FOUND.ordinal(), "NOT_FOUND:");
+        CODE_MSG_MAP.put(Code.K_CORRUPTION.ordinal(), "CORRUPTION:");
+        CODE_MSG_MAP.put(Code.K_NOT_SUPPORTED.ordinal(), "Not implemented: ");
+        CODE_MSG_MAP.put(Code.K_INVALID_ARGUMENT.ordinal(), "Invalid argument: ");
+        CODE_MSG_MAP.put(Code.K_IO_ERROR.ordinal(), "IO error: ");
         CODE_MSG_MAP.put(Code.K_UNKNOWN.ordinal(), "Unknown msg: ");
     }
 

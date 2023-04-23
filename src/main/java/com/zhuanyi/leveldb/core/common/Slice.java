@@ -2,9 +2,9 @@ package com.zhuanyi.leveldb.core.common;
 
 import javafx.util.Pair;
 
-import java.util.Iterator;
 
-public class Slice implements Comparable<Slice>, Iterable<Byte> {
+
+public class Slice implements Comparable<Slice> {
 
     private byte[] data;
 
@@ -13,6 +13,7 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
     private int end;
 
     public Slice() {
+        data = new byte[0];
     }
 
     private Slice(byte[] data, int begin, int size) {
@@ -47,10 +48,6 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
         end = begin + n;
     }
 
-    public void resize(int n) {
-        end = begin + n;
-    }
-
     public Integer readVarInt() {
 
         Pair<Integer, Integer> beginNumPair = Coding.getVarInt32Ptr(data, begin, end);
@@ -58,14 +55,6 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
             return null;
         }
         begin = beginNumPair.getKey();
-        return beginNumPair.getValue();
-    }
-
-    public Integer getVarInt() {
-        Pair<Integer, Integer> beginNumPair = Coding.getVarInt32Ptr(data, begin, end);
-        if (beginNumPair == null) {
-            return null;
-        }
         return beginNumPair.getValue();
     }
 
@@ -100,12 +89,6 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
         this.end = slice.end;
     }
 
-    public void refresh(Slice s) {
-        this.data = s.data;
-        this.begin = s.begin;
-        this.end = s.begin;
-    }
-
     public boolean empty() {
         return getSize() == 0;
     }
@@ -123,36 +106,6 @@ public class Slice implements Comparable<Slice>, Iterable<Byte> {
     public Slice copy() {
         byte[] newData = copyData();
         return new Slice(newData, 0, newData.length);
-    }
-
-    @Override
-    public Iterator<Byte> iterator() {
-        return new SliceIterator(data, begin, end);
-    }
-
-    private static class SliceIterator implements Iterator<Byte> {
-
-        private final byte[] data;
-
-        private int begin;
-
-        private final int end;
-
-        public SliceIterator(byte[] data, int begin, int end) {
-            this.data = data;
-            this.begin = begin;
-            this.end = end;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return begin < end;
-        }
-
-        @Override
-        public Byte next() {
-            return data[begin++];
-        }
     }
 
     @Override

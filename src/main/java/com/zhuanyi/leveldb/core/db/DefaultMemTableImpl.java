@@ -19,12 +19,11 @@ public class DefaultMemTableImpl implements MemTable {
 
     private final SkipTable<Slice> table;
 
-    public static class KeyComparator implements Comparator<Slice> {
+    private static class KeyComparator implements Comparator<Slice> {
 
         private final DbFormat.InternalKeyComparator comparator;
 
         public KeyComparator(DbFormat.InternalKeyComparator comparator) {
-            assert (comparator != null);
 
             this.comparator = comparator;
         }
@@ -34,22 +33,22 @@ public class DefaultMemTableImpl implements MemTable {
             Slice co1 = new Slice(o1);
             Slice co2 = new Slice(o2);
 
-            getLengthPrefixedSlice(co1);
-            getLengthPrefixedSlice(co2);
+            //getLengthPrefixedSlice(co1);
+            //getLengthPrefixedSlice(co2);
             return comparator.compare(co1, co2);
         }
 
         private void getLengthPrefixedSlice(Slice c) {
             int keyLen = c.readVarInt();
-            c.cutAhead(keyLen - 8);
+            c.cutAhead(keyLen);
         }
     }
 
-    private final KeyComparator comparator;
+    private final DbFormat.InternalKeyComparator comparator;
 
     public DefaultMemTableImpl(DbFormat.InternalKeyComparator comparator) {
-        this.comparator = new KeyComparator(comparator);
-        table = new SkipTable<>(this.comparator);
+        this.comparator = comparator;
+        this.table = new SkipTable<>(new KeyComparator(comparator));
     }
 
     private static class MemTableNode {
@@ -106,46 +105,58 @@ public class DefaultMemTableImpl implements MemTable {
 
         @Override
         public boolean valid() {
-            return it.valid();
+            if (!it.valid()) {
+                return false;
+            }
+
+            if (nowNode == null) {
+                nowNode = MemTableNode.readMemTableNode(new Slice(it.key()));
+            }
+            return nowNode.valid();
         }
 
         @Override
         public Slice key() {
             if (nowNode == null) {
-                nowNode = MemTableNode.readMemTableNode(it.key());
+                nowNode = MemTableNode.readMemTableNode(new Slice(it.key()));
             }
             return nowNode.memTableKey.getInternalKey().getUserKey();
         }
 
         @Override
         public void next() {
+            nowNode = null;
             it.next();
         }
 
         @Override
         public void prev() {
+            nowNode = null;
             it.prev();
         }
 
         @Override
         public void seek(Slice target) {
+            nowNode = null;
             it.seek(target);
         }
 
         @Override
         public void seekToFirst() {
+            nowNode = null;
             it.seekToFirst();
         }
 
         @Override
         public void seekToLast() {
+            nowNode = null;
             it.seekToLast();
         }
 
         @Override
         public Slice value() {
             if (nowNode == null) {
-                nowNode = MemTableNode.readMemTableNode(it.key());
+                nowNode = MemTableNode.readMemTableNode(new Slice(it.key()));
             }
             return nowNode.userValue;
         }
@@ -181,24 +192,17 @@ public class DefaultMemTableImpl implements MemTable {
     @Override
     public Result<Slice> get(LookupKey key) {
         Slice memkey = key.memTableKey();
-        TableIterator<Slice> it = table.iterator();
+        MemTableIterator<Slice> it = newIterator();
         it.seek(memkey);
         if (it.valid()) {
             Slice node = it.key();
             // 查询到的key为>=lookupKey，所以还需要判断是否相等
-            if (comparator.compare(key.memTableKey(), node) == 0) {
-                MemTableNode memTableNode = MemTableNode.readMemTableNode(node);
-                if (memTableNode.valid()) {
-                    return Result.success(memTableNode.userValue.copy());
-                } else {
-                    if (memTableNode.deleted()) {
-                        return Result.success(null);
-                    }
-                }
+            if (comparator.compareUserKey(key.userKey(), node) == 0) {
+                return Result.success(it.value());
             }
         }
 
-        return Result.fail(Status.unKnown(key.userKey().toString()));
+        return Result.fail(Status.notFound(key.userKey().toString()));
     }
 
 }

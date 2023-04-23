@@ -8,9 +8,8 @@ import com.zhuanyi.leveldb.core.db.format.LookupKey;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Comparator;
-
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class DefaultMemTableImplTest {
 
@@ -19,20 +18,35 @@ public class DefaultMemTableImplTest {
     @Before
     public void setUp() {
         defaultMemTableImplUnderTest = new DefaultMemTableImpl(
-                new DbFormat.InternalKeyComparator(Comparator.comparing(Object::toString)));
+                new DbFormat.InternalKeyComparator(null));
+        Slice keySlice = new Slice("key1".getBytes());
+        Slice value = new Slice("value1".getBytes());
+        defaultMemTableImplUnderTest.add(1L, ValueType.K_TYPE_VALUE, keySlice, value);
+
+        keySlice = new Slice("key2".getBytes());
+        value = new Slice("value2".getBytes());
+        defaultMemTableImplUnderTest.add(2L, ValueType.K_TYPE_VALUE, keySlice, value);
+
+        keySlice = new Slice("key3".getBytes());
+        value = new Slice("value3".getBytes());
+        defaultMemTableImplUnderTest.add(3L, ValueType.K_TYPE_VALUE, keySlice, value);
     }
 
     @Test
     public void testApproximateMemoryUsage() {
-        assertEquals(0L, defaultMemTableImplUnderTest.approximateMemoryUsage());
+        System.out.println(defaultMemTableImplUnderTest.approximateMemoryUsage());
     }
 
     @Test
     public void testNewIterator() {
         // Setup
         // Run the test
-        final MemTableIterator<Slice> result = defaultMemTableImplUnderTest.newIterator();
-
+        final MemTableIterator<Slice> it = defaultMemTableImplUnderTest.newIterator();
+        it.seekToFirst();
+        while (it.valid()) {
+            System.out.println(it.key() + "_" + it.value());
+            it.next();
+        }
         // Verify the results
     }
 
@@ -56,8 +70,29 @@ public class DefaultMemTableImplTest {
         final LookupKey key = new LookupKey("content".getBytes(), 0L);
 
         // Run the test
-        final Result<Slice> result = defaultMemTableImplUnderTest.get(key);
+        Result<Slice> result = defaultMemTableImplUnderTest.get(key);
+        assertFalse(result.success());
+        System.out.println(result.getStatus());
+
+        final Slice keySlice = new Slice("key".getBytes());
+        final Slice value = new Slice("value1".getBytes());
+        defaultMemTableImplUnderTest.add(1L, ValueType.K_TYPE_VALUE, keySlice, value);
+        result = defaultMemTableImplUnderTest.get(new LookupKey("key".getBytes(), 2L));
+        assertEquals(value.toString(), "value1");
+        System.out.println(result.getValue());
+
+        // 先删除后查询
+        defaultMemTableImplUnderTest.add(3L, ValueType.K_TYPE_DELETION, keySlice, new Slice());
+        result = defaultMemTableImplUnderTest.get(new LookupKey("key".getBytes(), 4L));
+        assertFalse(result.success());
+        System.out.println(result);
 
         // Verify the results
+    }
+
+    @Test
+    public void testLookUpKey() {
+        final LookupKey key = new LookupKey("key".getBytes(), 2L);
+        System.out.println(key.memTableKey());
     }
 }
