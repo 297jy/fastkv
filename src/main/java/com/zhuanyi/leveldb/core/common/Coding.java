@@ -1,7 +1,9 @@
 package com.zhuanyi.leveldb.core.common;
 
-import javafx.util.Pair;
 
+import com.zhuanyi.leveldb.common.Pair;
+
+import java.nio.ByteBuffer;
 
 public class Coding {
 
@@ -64,6 +66,13 @@ public class Coding {
                 | ((long) dst[begin++] << 40)
                 | ((long) dst[begin++] << 48)
                 | ((long) dst[begin] << 56);
+    }
+
+    public static void encodeFixed32ToBuffer(ByteBuffer dst, int num) {
+        dst.put((byte) (num & 0xff));
+        dst.put((byte) ((num >> 8) & 0xff));
+        dst.put((byte) ((num >> 16) & 0xff));
+        dst.put((byte) ((num >> 16) & 0xff));
     }
 
     public static void putFixed64(byte[] dst, int begin, long value) {

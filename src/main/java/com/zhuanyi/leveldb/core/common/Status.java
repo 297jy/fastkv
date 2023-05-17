@@ -1,6 +1,6 @@
 package com.zhuanyi.leveldb.core.common;
 
-import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
+//import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
@@ -113,6 +113,7 @@ public class Status {
         return type + state;
     }
 
+    /**
     public static void main(String[] args) {
         System.out.println(Code.K_CORRUPTION.ordinal());
         System.out.println(Code.K_CORRUPTION);
@@ -126,5 +127,5 @@ public class Status {
         System.out.println(ObjectSizeCalculator.getObjectSize(sb));
         System.out.println(ObjectSizeCalculator.getObjectSize(new Status()));
 
-    }
+    }**/
 }

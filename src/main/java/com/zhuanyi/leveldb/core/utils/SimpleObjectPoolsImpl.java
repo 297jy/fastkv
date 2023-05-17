@@ -1,14 +1,17 @@
-package com.zhuanyi.leveldb.utils;
+package com.zhuanyi.leveldb.core.utils;
+
+import com.zhuanyi.leveldb.core.common.RequestContext;
 
 import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * 简单的对象池，避免频繁new对象，导致频繁GC，造成Stop The World
- *
+ * 保证是线程安全的，后续用cas机制优化，否则加锁的开销也很大
  * @param <E>
  */
 public class SimpleObjectPoolsImpl<E> implements ObjectPools<E> {
@@ -52,14 +55,52 @@ public class SimpleObjectPoolsImpl<E> implements ObjectPools<E> {
 
     private final FastList<E> emptyNodes = new FastList<>();
 
-    private final Class<E> c;
+    private Map<Long,FastList<E>> busyListMap;
 
     private final Lock lock = new ReentrantLock();
 
-    public SimpleObjectPoolsImpl(Class<E> c) {
-        this.c = c;
+    private final Supplier<E> buildFun;
+
+    private final Consumer<E> initFun;
+
+
+    public SimpleObjectPoolsImpl(Supplier<E> buildFun, Consumer<E> initFun) {
+        this.buildFun = buildFun;
+        this.initFun = initFun;
     }
 
+    @Override
+    public E allocateObject(RequestContext requestContext) {
+        lock.lock();
+        try {
+            E res = null;
+            if (emptyNodes.isEmpty()) {
+                res = buildFun.get();
+            } else {
+                res = emptyNodes.get();
+            }
+            if (res != null) {
+                initFun.accept(res);
+            }
+            return res;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public void releaseObjects(RequestContext requestContext, E... objs) {
+        lock.lock();
+        try {
+            for (E obj : objs) {
+                emptyNodes.add(obj);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
     @Override
     public E allocateObject(Consumer<E> initFun) {
         lock.lock();
@@ -93,5 +134,5 @@ public class SimpleObjectPoolsImpl<E> implements ObjectPools<E> {
         } finally {
             lock.unlock();
         }
-    }
+    }**/
 }

@@ -1,6 +1,8 @@
 package com.zhuanyi.leveldb.core.table;
 
 
+import org.apache.lucene.util.RamUsageEstimator;
+
 import java.util.Comparator;
 import java.util.Random;
 
@@ -268,5 +270,11 @@ public class SkipTable<K extends Comparable<K>> {
             sb.append("高度为: ").append(i).append(",数量为: ").append(heights[i]).append("\n");
         }
         return sb.toString();
+    }
+
+    public long approximateMemoryUsage() {
+        //return ClassLayout.parseInstance(table).instanceSize();
+        //return ObjectSizeCalculator.getObjectSize(table);
+        return RamUsageEstimator.sizeOf(head);
     }
 }

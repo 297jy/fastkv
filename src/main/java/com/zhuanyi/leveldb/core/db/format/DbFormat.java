@@ -196,9 +196,4 @@ public class DbFormat {
         }
 
      }**/
-
-    public static Slice getUserKey(Slice node) {
-        MemTableKey memTableKey = MemTableKey.readMemTableKey(node);
-        return memTableKey.getInternalKey().getUserKey();
-    }
 }

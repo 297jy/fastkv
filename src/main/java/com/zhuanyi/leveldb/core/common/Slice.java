@@ -1,8 +1,10 @@
 package com.zhuanyi.leveldb.core.common;
 
-import javafx.util.Pair;
 
+import com.zhuanyi.leveldb.common.Pair;
 
+import java.nio.ByteBuffer;
+import java.util.zip.CRC32;
 
 public class Slice implements Comparable<Slice> {
 
@@ -44,8 +46,15 @@ public class Slice implements Comparable<Slice> {
         return res;
     }
 
-    public void cutAhead(int n) {
-        end = begin + n;
+    public long crc32(int n) {
+        CRC32 crc32 = new CRC32();
+        crc32.update(data, begin, n);
+        return crc32.getValue();
+    }
+
+    public void readToByteBuffer(ByteBuffer buffer, int n) {
+        buffer.put(data, begin, n);
+        begin += n;
     }
 
     public Integer readVarInt() {

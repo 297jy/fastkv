@@ -1,4 +1,4 @@
-package com.zhuanyi.leveldb.benchmark;
+package com.zhuanyi.leveldb.core.benchmark;
 
 import com.zhuanyi.leveldb.core.common.Slice;
 

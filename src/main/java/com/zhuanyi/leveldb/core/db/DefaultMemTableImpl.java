@@ -11,7 +11,8 @@ import com.zhuanyi.leveldb.core.db.format.LookupKey;
 import com.zhuanyi.leveldb.core.db.format.MemTableKey;
 import com.zhuanyi.leveldb.core.table.SkipTable;
 import com.zhuanyi.leveldb.core.table.TableIterator;
-import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
+//import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
+//import org.openjdk.jol.info.ClassLayout;
 
 import java.util.Comparator;
 
@@ -32,15 +33,7 @@ public class DefaultMemTableImpl implements MemTable {
         public int compare(Slice o1, Slice o2) {
             Slice co1 = new Slice(o1);
             Slice co2 = new Slice(o2);
-
-            //getLengthPrefixedSlice(co1);
-            //getLengthPrefixedSlice(co2);
             return comparator.compare(co1, co2);
-        }
-
-        private void getLengthPrefixedSlice(Slice c) {
-            int keyLen = c.readVarInt();
-            c.cutAhead(keyLen);
         }
     }
 
@@ -89,7 +82,10 @@ public class DefaultMemTableImpl implements MemTable {
 
     @Override
     public long approximateMemoryUsage() {
-        return ObjectSizeCalculator.getObjectSize(table);
+        //return ClassLayout.parseInstance(table).instanceSize();
+        //return ObjectSizeCalculator.getObjectSize(table);
+        //return RamUsageEstimator.sizeOf(table);
+        return table.approximateMemoryUsage();
     }
 
 
