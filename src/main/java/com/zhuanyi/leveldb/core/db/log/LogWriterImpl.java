@@ -37,12 +37,12 @@ public class LogWriterImpl implements LogWriter {
 
         FileChannel fileWriteChannel = fileManage.getLogFileChannel();
         boolean begin = true;
-        while (slice.getSize() > 0) {
+        while (slice.readableBytes() > 0) {
             int avail = LogFormat.K_BLOCK_SIZE - blockOffset - LogFormat.K_HEADER_SIZE;
-            int fragmentLen = Math.min(slice.getSize(), avail);
+            int fragmentLen = Math.min(slice.readableBytes(), avail);
 
             LogFormat.RecordType type;
-            boolean end = slice.getSize() == fragmentLen;
+            boolean end = slice.readableBytes() == fragmentLen;
             if (begin && end) {
                 type = LogFormat.RecordType.K_FULL_TYPE;
             } else if (begin) {
@@ -91,7 +91,7 @@ public class LogWriterImpl implements LogWriter {
         if (write(fileWriteChannel, dest)) {
             return Status.ok();
         }
-        return Status.iOError();
+        return Status.ioError();
     }
 
     private void fillZero(int leftover, ByteBuffer dest) {

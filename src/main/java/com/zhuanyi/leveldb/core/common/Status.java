@@ -1,6 +1,5 @@
 package com.zhuanyi.leveldb.core.common;
 
-//import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
@@ -70,7 +69,7 @@ public class Status {
         return new Status(Code.K_INVALID_ARGUMENT, msg);
     }
 
-    public static Status iOError(String... msg) {
+    public static Status ioError(String... msg) {
         return new Status(Code.K_IO_ERROR, msg);
     }
 

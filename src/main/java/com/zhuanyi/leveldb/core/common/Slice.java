@@ -52,11 +52,6 @@ public class Slice implements Comparable<Slice> {
         return crc32.getValue();
     }
 
-    public void readToByteBuffer(ByteBuffer buffer, int n) {
-        buffer.put(data, begin, n);
-        begin += n;
-    }
-
     public Integer readVarInt() {
 
         Pair<Integer, Integer> beginNumPair = Coding.getVarInt32Ptr(data, begin, end);
@@ -83,8 +78,9 @@ public class Slice implements Comparable<Slice> {
     }
 
     public void write(Slice src) {
-        System.arraycopy(src.data, src.begin, data, end, src.getSize());
-        end += src.getSize();
+
+        System.arraycopy(src.data, src.begin, data, end, src.readableBytes());
+        end += src.readableBytes();
     }
 
     public void write(byte[] src) {
@@ -98,23 +94,45 @@ public class Slice implements Comparable<Slice> {
         this.end = slice.end;
     }
 
-    public boolean empty() {
-        return getSize() == 0;
-    }
-
     public byte[] copyData() {
-        byte[] newData = new byte[getSize()];
-        System.arraycopy(data, begin, newData, 0, getSize());
+        byte[] newData = new byte[readableBytes()];
+        System.arraycopy(data, begin, newData, 0, readableBytes());
         return newData;
     }
 
-    public int getSize() {
+    /**
+     * 当前slice剩余可读的字节数
+     * @return
+     */
+    public int readableBytes() {
         return end - begin;
     }
 
     public Slice copy() {
         byte[] newData = copyData();
         return new Slice(newData, 0, newData.length);
+    }
+
+    public Slice duplicate() {
+        return new Slice(this);
+    }
+
+    public byte[] bytes() {
+        return copyData();
+    }
+
+    public boolean isEmpty() {
+        return readableBytes() == 0;
+    }
+
+    public void readToBytes(byte[] targets, int offset, int len) {
+        System.arraycopy(data, begin, targets, offset, len);
+        begin += len;
+    }
+
+    public void readToByteBuffer(ByteBuffer targets, int len) {
+        targets.put(data, begin, len);
+        begin += len;
     }
 
     @Override
@@ -128,8 +146,8 @@ public class Slice implements Comparable<Slice> {
             i++;
             j++;
         }
-        int s1 = getSize();
-        int s2 = o.getSize();
+        int s1 = readableBytes();
+        int s2 = o.readableBytes();
         if (s1 == s2) {
             return 0;
         }
@@ -138,6 +156,6 @@ public class Slice implements Comparable<Slice> {
 
     @Override
     public String toString() {
-        return new String(data, begin, getSize());
+        return new String(data, begin, readableBytes());
     }
 }

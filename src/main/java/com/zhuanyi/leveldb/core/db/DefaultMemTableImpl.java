@@ -170,8 +170,8 @@ public class DefaultMemTableImpl implements MemTable {
 
     @Override
     public void add(long seq, ValueType type, Slice key, Slice value) {
-        int keySize = key.getSize();
-        int valueSize = value.getSize();
+        int keySize = key.readableBytes();
+        int valueSize = value.readableBytes();
         int internalKeySize = keySize + 8;
         // 数据格式:internalKeySizeByteLen + internalKeySize + valueByteLen + valueSize
         int encodedLen = Coding.varIntLength(internalKeySize) + internalKeySize + Coding.varIntLength(valueSize) + valueSize;
