@@ -17,8 +17,7 @@ public class LogWriterImplTest {
     @Test
     public void addRecord() throws Exception{
 
-        LogWriterImpl logWriter = new LogWriterImpl();
-        logWriter.setDest(new MappedWritableFile("C:\\project\\leveldb-java\\db\\test.bin", 1024 * 1024 * 1024));
+        LogWriterImpl logWriter = new LogWriterImpl(new MappedWritableFile("C:\\project\\leveldb-java\\db\\test.bin", 1024 * 1024 * 128));
         Status status = logWriter.addRecord(new Slice("123".getBytes()));
         assertTrue(status.isOk());
 

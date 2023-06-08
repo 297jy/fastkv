@@ -11,6 +11,10 @@ public class LogWriterImpl implements LogWriter {
     private int blockOffset;
     private WritableFile dest;
 
+    public LogWriterImpl(WritableFile dest) {
+        this.dest = dest;
+    }
+
     @Override
     public Status addRecord(Slice slice) {
         Slice data = slice.duplicate();
@@ -65,6 +69,8 @@ public class LogWriterImpl implements LogWriter {
                 (byte) t.getCode()
         });
         fragment.write(data);
+        System.out.println("writeFragmentLen:"+len);
+        System.out.println("writeFragmentType:"+t);
 
         Status s = dest.append(fragment);
         if (s.isOk()) {

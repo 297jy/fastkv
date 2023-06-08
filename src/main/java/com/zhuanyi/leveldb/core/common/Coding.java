@@ -75,6 +75,13 @@ public class Coding {
                 | ((long) dst[begin] << 56);
     }
 
+    public static long decodeFixed32(byte[] dst, int begin) {
+        return dst[begin++]
+                | (dst[begin++] << 8)
+                | (dst[begin++] << 16)
+                | (dst[begin] << 24);
+    }
+
     public static void encodeFixed32ToBuffer(ByteBuffer dst, int num) {
         dst.put((byte) (num & 0xff));
         dst.put((byte) ((num >> 8) & 0xff));

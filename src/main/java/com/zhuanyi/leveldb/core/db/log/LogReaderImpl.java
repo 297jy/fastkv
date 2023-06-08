@@ -12,11 +12,7 @@ public class LogReaderImpl implements LogReader {
 
     private SequentialFile dest;
 
-    private List<Slice> buffers;
-
     private Slice buffer;
-
-    private long endOfBufferOffset;
 
     private boolean eof;
 
@@ -24,6 +20,13 @@ public class LogReaderImpl implements LogReader {
      * 是否检查crc循环校验和
      */
     private boolean checkSum;
+
+    public LogReaderImpl(SequentialFile dest) {
+        this.dest = dest;
+        this.buffer = new Slice(LogFormat.K_BLOCK_SIZE);
+        this.checkSum = false;
+        this.eof = false;
+    }
 
     @Override
     public Result<Slice> readRecord() {
@@ -61,9 +64,9 @@ public class LogReaderImpl implements LogReader {
                 if (!eof) {
                     buffer.clear();
                     Status status = dest.read(LogFormat.K_BLOCK_SIZE, buffer);
-                    endOfBufferOffset += status.isOk() ? buffer.readableBytes() : 0;
+                    System.out.println(buffer);
                     if (!status.isOk()) {
-                        buffers.clear();
+                        buffer.clear();
                         eof = true;
                         return LogFormat.RecordType.K_EOF;
                     }else {
@@ -73,12 +76,12 @@ public class LogReaderImpl implements LogReader {
                     }
                     continue;
                 } else {
-                    buffers.clear();
+                    buffer.clear();
                     return LogFormat.RecordType.K_EOF;
                 }
             }
 
-            long actualCrc = buffer.readLong();
+            long actualCrc = buffer.readInt();
             byte a = buffer.readByte();
             byte b = buffer.readByte();
             LogFormat.RecordType recordType = LogFormat.RecordType.valueOf(buffer.readByte());
@@ -90,20 +93,22 @@ public class LogReaderImpl implements LogReader {
                 }
                 return LogFormat.RecordType.K_EOF;
             }
+            System.out.println("readFragmentLen:"+length);
+            System.out.println("readFragmentType:"+recordType);
             if (LogFormat.RecordType.K_ZERO_TYPE == recordType && length == 0) {
                 buffer.clear();
                 return LogFormat.RecordType.K_BAD_RECORD;
             }
 
+            result.reload(buffer.read(length));
             if (checkSum) {
-                long expectCrc = buffer.crc32();
+                long expectCrc = result.crc32();
                 if (expectCrc != actualCrc) {
                     buffer.clear();
                     return LogFormat.RecordType.K_BAD_RECORD;
                 }
             }
 
-            result.reload(buffer);
             return recordType;
         }
     }

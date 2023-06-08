@@ -7,7 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.zip.CRC32;
 
 @Slf4j
@@ -75,6 +77,12 @@ public class Slice implements Comparable<Slice> {
     public long readLong() {
         long res = Coding.decodeFixed64(data, begin);
         begin += 8;
+        return res;
+    }
+
+    public long readInt() {
+        long res = Coding.decodeFixed32(data, begin);
+        begin += 4;
         return res;
     }
 
@@ -215,6 +223,6 @@ public class Slice implements Comparable<Slice> {
 
     @Override
     public String toString() {
-        return new String(data, begin, readableBytes());
+        return Arrays.toString(Arrays.copyOfRange(data, begin, end));
     }
 }
