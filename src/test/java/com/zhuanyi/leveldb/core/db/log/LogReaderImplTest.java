@@ -13,6 +13,9 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.boot.web.server.Ssl;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,7 +34,7 @@ public class LogReaderImplTest {
     private LogWriterImpl logWriter;
 
     @Before
-    public void setUp() throws Exception{
+    public void setUp() throws Exception {
         readDest = new MappedSequentialFile("C:\\project\\leveldb-java\\db\\test.bin");
         writeDest = new MappedWritableFile("C:\\project\\leveldb-java\\db\\test.bin", 1024 * 1024 * 128);
         logReader = new LogReaderImpl(readDest);
@@ -40,14 +43,27 @@ public class LogReaderImplTest {
 
     @Test
     public void testReadRecord() {
+        List<String> tests = new ArrayList<>();
+        for (int i = 0; i < 100000; i++) {
+            long num = System.currentTimeMillis();
+            Slice old = new Slice(String.valueOf(num).getBytes());
+            Status status = logWriter.addRecord(old);
+            tests.add(num+"");
+        }
 
-        Slice old = new Slice("123".getBytes());
-        Status status = logWriter.addRecord(old);
-        Result<Slice> result = logReader.readRecord();
-        System.out.println(result.getStatus());
-        assertTrue(result.success());
-        assertEquals(result.getData().compareTo(old), 0);
-        System.out.println(result.getData());
+        List<String> records = new ArrayList<>();
+        while (true) {
+            Result<Slice> result = logReader.readRecord();
+            if (result.success()) {
+                records.add(result.getData().value());
+            } else {
+                break;
+            }
+        }
+
+        System.out.println("tests:"+tests.size());
+        System.out.println("records:"+records.size());
+        assertEquals(tests, records);
     }
 
 }

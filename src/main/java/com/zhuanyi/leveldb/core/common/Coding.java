@@ -57,11 +57,11 @@ public class Coding {
         dst[begin] = (byte) (value >> 56);
     }
 
-    public static void encodeFixed32(byte[] dst, int begin, long value) {
-        dst[begin++] = (byte) value;
-        dst[begin++] = (byte) (value >> 8);
-        dst[begin++] = (byte) (value >> 16);
-        dst[begin] = (byte) (value >> 24);
+    public static void encodeFixed32(byte[] dst, int begin, int value) {
+        dst[begin+3] = (byte) (value & 0xFF);
+        dst[begin+2] = (byte) (value >> 8 & 0xFF);
+        dst[begin+1] = (byte) (value >> 16 & 0xFF);
+        dst[begin] = (byte) (value >> 24 & 0xFF);
     }
 
     public static long decodeFixed64(byte[] dst, int begin) {
@@ -75,11 +75,12 @@ public class Coding {
                 | ((long) dst[begin] << 56);
     }
 
-    public static long decodeFixed32(byte[] dst, int begin) {
-        return dst[begin++]
-                | (dst[begin++] << 8)
-                | (dst[begin++] << 16)
-                | (dst[begin] << 24);
+    public static int decodeFixed32(byte[] dst, int begin) {
+        int b0 = dst[begin] & 0xFF;
+        int b1 = dst[begin + 1] & 0xFF;
+        int b2 = dst[begin + 2] & 0xFF;
+        int b3 = dst[begin + 3] & 0xFF;
+        return (b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
     }
 
     public static void encodeFixed32ToBuffer(ByteBuffer dst, int num) {

@@ -57,7 +57,7 @@ public class LogWriterImpl implements LogWriter {
     private Status emitPhysicalRecord(LogFormat.RecordType t, Slice data) {
         int len = data.readableBytes();
         int totalLen = LogFormat.K_HEADER_SIZE + len;
-        long crc32 = data.crc32();
+        int crc32 = data.crc32();
         // 一个数据帧的长度为：数据头+数据部分的长度
         Slice fragment = new Slice(totalLen);
         System.out.println("emitPhysicalRecordc32:" + crc32);

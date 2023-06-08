@@ -58,10 +58,10 @@ public class Slice implements Comparable<Slice> {
         return res;
     }
 
-    public long crc32() {
+    public int crc32() {
         CRC32 crc32 = new CRC32();
         crc32.update(data, begin, readableBytes());
-        return crc32.getValue();
+        return (int) crc32.getValue();
     }
 
     public Integer readVarInt() {
@@ -80,8 +80,9 @@ public class Slice implements Comparable<Slice> {
         return res;
     }
 
-    public long readInt() {
-        long res = Coding.decodeFixed32(data, begin);
+    public int readInt() {
+        int res = Coding.decodeFixed32(data, begin);
+        System.out.println("readInt," + res + "," + Arrays.toString(Arrays.copyOfRange(data, begin, begin + 4)));
         begin += 4;
         return res;
     }
@@ -95,7 +96,7 @@ public class Slice implements Comparable<Slice> {
         end += 8;
     }
 
-    public void writeInt(long value) {
+    public void writeInt(int value) {
         Coding.encodeFixed32(data, end, value);
         end += 4;
     }
@@ -224,5 +225,9 @@ public class Slice implements Comparable<Slice> {
     @Override
     public String toString() {
         return Arrays.toString(Arrays.copyOfRange(data, begin, end));
+    }
+
+    public String value() {
+        return new String(data, begin, readableBytes());
     }
 }

@@ -24,7 +24,7 @@ public class LogReaderImpl implements LogReader {
     public LogReaderImpl(SequentialFile dest) {
         this.dest = dest;
         this.buffer = new Slice(LogFormat.K_BLOCK_SIZE);
-        this.checkSum = false;
+        this.checkSum = true;
         this.eof = false;
     }
 
@@ -64,7 +64,6 @@ public class LogReaderImpl implements LogReader {
                 if (!eof) {
                     buffer.clear();
                     Status status = dest.read(LogFormat.K_BLOCK_SIZE, buffer);
-                    System.out.println(buffer);
                     if (!status.isOk()) {
                         buffer.clear();
                         eof = true;
@@ -81,7 +80,7 @@ public class LogReaderImpl implements LogReader {
                 }
             }
 
-            long actualCrc = buffer.readInt();
+            int actualCrc = buffer.readInt();
             byte a = buffer.readByte();
             byte b = buffer.readByte();
             LogFormat.RecordType recordType = LogFormat.RecordType.valueOf(buffer.readByte());
@@ -102,9 +101,8 @@ public class LogReaderImpl implements LogReader {
 
             result.reload(buffer.read(length));
             if (checkSum) {
-                long expectCrc = result.crc32();
+                int expectCrc = result.crc32();
                 if (expectCrc != actualCrc) {
-                    buffer.clear();
                     return LogFormat.RecordType.K_BAD_RECORD;
                 }
             }
