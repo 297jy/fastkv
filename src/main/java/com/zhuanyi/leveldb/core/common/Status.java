@@ -17,6 +17,8 @@ public class Status {
         K_NOT_SUPPORTED,
         K_INVALID_ARGUMENT,
         K_IO_ERROR,
+        K_EOF,
+        K_BAD_RECORD,
         K_UNKNOWN
     }
 
@@ -29,6 +31,8 @@ public class Status {
         CODE_MSG_MAP.put(Code.K_NOT_SUPPORTED.ordinal(), "Not implemented: ");
         CODE_MSG_MAP.put(Code.K_INVALID_ARGUMENT.ordinal(), "Invalid argument: ");
         CODE_MSG_MAP.put(Code.K_IO_ERROR.ordinal(), "IO error: ");
+        CODE_MSG_MAP.put(Code.K_EOF.ordinal(), "EOF: ");
+        CODE_MSG_MAP.put(Code.K_BAD_RECORD.ordinal(), "BAD RECORD: ");
         CODE_MSG_MAP.put(Code.K_UNKNOWN.ordinal(), "Unknown msg: ");
     }
 
@@ -73,6 +77,15 @@ public class Status {
         return new Status(Code.K_IO_ERROR, msg);
     }
 
+    public static Status eof(String... msg) {
+        return new Status(Code.K_EOF, msg);
+    }
+
+    public static Status badRecord(String... msg) {
+        return new Status(Code.K_BAD_RECORD, msg);
+    }
+
+
     public boolean isOk() {
         return code == Code.K_OK.ordinal();
     }
@@ -96,6 +109,15 @@ public class Status {
     public boolean isInvalidArgument() {
         return code == Code.K_INVALID_ARGUMENT.ordinal();
     }
+
+    public boolean isEof() {
+        return code == Code.K_EOF.ordinal();
+    }
+
+    public boolean isBadRecord() {
+        return code == Code.K_BAD_RECORD.ordinal();
+    }
+
 
     private Code code() {
         for (Code c : Code.values()) {

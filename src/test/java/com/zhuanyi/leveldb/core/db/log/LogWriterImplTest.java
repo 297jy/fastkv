@@ -1,7 +1,8 @@
 package com.zhuanyi.leveldb.core.db.log;
 
 import com.zhuanyi.leveldb.core.common.Slice;
-import jakarta.annotation.Resource;
+import com.zhuanyi.leveldb.core.common.Status;
+import com.zhuanyi.leveldb.core.store.MappedWritableFile;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,11 +14,13 @@ import static org.junit.Assert.*;
 @SpringBootTest
 public class LogWriterImplTest {
 
-    @Resource
-    private LogWriter logWriter;
     @Test
-    public void addRecord() {
+    public void addRecord() throws Exception{
 
-        logWriter.addRecord(new Slice("123".getBytes()));
+        LogWriterImpl logWriter = new LogWriterImpl();
+        logWriter.setDest(new MappedWritableFile("C:\\project\\leveldb-java\\db\\test.bin", 1024 * 1024 * 1024));
+        Status status = logWriter.addRecord(new Slice("123".getBytes()));
+        assertTrue(status.isOk());
+
     }
 }

@@ -57,6 +57,13 @@ public class Coding {
         dst[begin] = (byte) (value >> 56);
     }
 
+    public static void encodeFixed32(byte[] dst, int begin, long value) {
+        dst[begin++] = (byte) value;
+        dst[begin++] = (byte) (value >> 8);
+        dst[begin++] = (byte) (value >> 16);
+        dst[begin] = (byte) (value >> 24);
+    }
+
     public static long decodeFixed64(byte[] dst, int begin) {
         return dst[begin++]
                 | (dst[begin++] << 8)
@@ -72,7 +79,7 @@ public class Coding {
         dst.put((byte) (num & 0xff));
         dst.put((byte) ((num >> 8) & 0xff));
         dst.put((byte) ((num >> 16) & 0xff));
-        dst.put((byte) ((num >> 16) & 0xff));
+        dst.put((byte) ((num >> 24) & 0xff));
     }
 
     public static void putFixed64(byte[] dst, int begin, long value) {

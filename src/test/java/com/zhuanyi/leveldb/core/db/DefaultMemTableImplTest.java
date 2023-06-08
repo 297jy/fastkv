@@ -82,7 +82,7 @@ public class DefaultMemTableImplTest {
         System.out.println(result.getValue());
 
         // 先删除后查询
-        defaultMemTableImplUnderTest.add(3L, ValueType.K_TYPE_DELETION, keySlice, new Slice());
+        defaultMemTableImplUnderTest.add(3L, ValueType.K_TYPE_DELETION, keySlice, new Slice("key".getBytes()));
         result = defaultMemTableImplUnderTest.get(new LookupKey("key".getBytes(), 4L));
         assertFalse(result.success());
         System.out.println(result);

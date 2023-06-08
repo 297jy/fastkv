@@ -1,48 +1,38 @@
 package com.zhuanyi.leveldb.core.db.log;
 
-import com.zhuanyi.leveldb.core.common.Coding;
 import com.zhuanyi.leveldb.core.common.Slice;
 import com.zhuanyi.leveldb.core.common.Status;
-import com.zhuanyi.leveldb.core.manager.FileManage;
-import com.zhuanyi.leveldb.core.utils.ObjectPools;
-import com.zhuanyi.leveldb.core.utils.SimpleObjectPoolsImpl;
-import jakarta.annotation.Resource;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
+import com.zhuanyi.leveldb.core.store.WritableFile;
+import lombok.Data;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-
-@Component
-@Scope("singleton")
+@Data
 public class LogWriterImpl implements LogWriter {
 
-    private final static ObjectPools<ByteBuffer> pools = new SimpleObjectPoolsImpl<>(() -> ByteBuffer.allocateDirect(LogFormat.K_BLOCK_SIZE), ByteBuffer::clear);
-
     private int blockOffset;
-
-    //private FileChannel fileWriteChannel;
-
-    @Resource
-    private FileManage fileManage;
-
-    public LogWriterImpl() {
-        //fileWriteChannel = fileManage.getLogFileChannel();
-    }
+    private WritableFile dest;
 
     @Override
     public Status addRecord(Slice slice) {
-        ByteBuffer dest = pools.allocateObject(null);
+        Slice data = slice.duplicate();
+        int left = data.readableBytes();
 
-        FileChannel fileWriteChannel = fileManage.getLogFileChannel();
+        Status s;
         boolean begin = true;
-        while (slice.readableBytes() > 0) {
+        do {
+            // 计算当前数据页剩余的可用空间
+            int leftOver = LogFormat.K_BLOCK_SIZE - blockOffset;
+            if (leftOver < LogFormat.K_HEADER_SIZE) {
+                if (leftOver > 0) {
+                    dest.append(Slice.allocate(leftOver));
+                }
+                blockOffset = 0;
+            }
+
             int avail = LogFormat.K_BLOCK_SIZE - blockOffset - LogFormat.K_HEADER_SIZE;
-            int fragmentLen = Math.min(slice.readableBytes(), avail);
+            int fragmentLen = Math.min(left, avail);
 
             LogFormat.RecordType type;
-            boolean end = slice.readableBytes() == fragmentLen;
+            boolean end = left == fragmentLen;
             if (begin && end) {
                 type = LogFormat.RecordType.K_FULL_TYPE;
             } else if (begin) {
@@ -53,61 +43,34 @@ public class LogWriterImpl implements LogWriter {
                 type = LogFormat.RecordType.K_MIDDLE_TYPE;
             }
 
-            Status s = emitPhysicalRecord(fileWriteChannel, dest, type, slice, fragmentLen);
-            if (!s.isOk()) {
-                return s;
-            }
+            s = emitPhysicalRecord(type, data.read(fragmentLen));
+            left -= fragmentLen;
             begin = false;
-        }
-
-        try {
-            fileWriteChannel.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return Status.ok();
+        } while (s.isOk() && left > 0);
+        return s;
     }
 
-    private Status emitPhysicalRecord(FileChannel fileWriteChannel, ByteBuffer dest, LogFormat.RecordType t, Slice slice, int len) {
-        long crc32 = slice.crc32(len);
-        Coding.encodeFixed32ToBuffer(dest, (int) crc32);
+    private Status emitPhysicalRecord(LogFormat.RecordType t, Slice data) {
+        int len = data.readableBytes();
+        int totalLen = LogFormat.K_HEADER_SIZE + len;
+        long crc32 = data.crc32();
+        // 一个数据帧的长度为：数据头+数据部分的长度
+        Slice fragment = new Slice(totalLen);
+        System.out.println("emitPhysicalRecordc32:" + crc32);
+        fragment.writeInt(crc32);
+        // 写入数据头部分的数据
+        fragment.write(new byte[] {
+                (byte) (len & 0xff),
+                (byte) (len >> 8),
+                (byte) t.getCode()
+        });
+        fragment.write(data);
 
-        // 设置 log record数据部分的长度
-        dest.put((byte) (len & 0xff));
-        dest.put((byte) (len >> 8));
-        // 设置记录类型
-        dest.put((byte) t.getCode());
-
-        slice.readToByteBuffer(dest, len);
-
-        blockOffset += LogFormat.K_HEADER_SIZE + len;
-
-        int leftover = LogFormat.K_BLOCK_SIZE - blockOffset;
-        // 如果这个块剩余的空间连log record的头部都放不下，那么就把剩余的空间都填充成0
-        if (leftover < LogFormat.K_HEADER_SIZE) {
-            fillZero(leftover, dest);
+        Status s = dest.append(fragment);
+        if (s.isOk()) {
+            s = dest.flush();
         }
-
-        if (write(fileWriteChannel, dest)) {
-            return Status.ok();
-        }
-        return Status.ioError();
-    }
-
-    private void fillZero(int leftover, ByteBuffer dest) {
-        for (int i = 0; i < leftover; i++) {
-            dest.put((byte) 0);
-        }
-    }
-
-    private boolean write(FileChannel fileWriteChannel, ByteBuffer dest) {
-        try {
-            fileWriteChannel.write(dest);
-            //dest.clear();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
+        blockOffset += totalLen;
+        return s;
     }
 }

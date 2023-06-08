@@ -49,7 +49,11 @@ public class LogFormat {
         /**
          * 说明是user record最后的一条log record
          */
-        K_LAST_TYPE(4);
+        K_LAST_TYPE(4),
+
+        K_EOF(5),
+
+        K_BAD_RECORD(6);
 
         private final int code;
 
