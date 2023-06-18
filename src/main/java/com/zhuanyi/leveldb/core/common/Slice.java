@@ -161,12 +161,25 @@ public class Slice implements Comparable<Slice> {
         return new Slice(newData, 0, newData.length);
     }
 
+    public void skipBytes(int n) {
+        begin += n;
+    }
+
     public Slice duplicate() {
         return new Slice(this);
     }
 
     public byte[] bytes() {
         return copyData();
+    }
+
+    public int sharedPrefixLen(Slice target) {
+        int minLength = Math.min(readableBytes(), target.readableBytes());
+        int shared = 0;
+        while ((shared < minLength) && (data[shared] == target.data[shared])) {
+            shared++;
+        }
+        return shared;
     }
 
     public boolean isEmpty() {
